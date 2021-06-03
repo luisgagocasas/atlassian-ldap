@@ -5,8 +5,7 @@ services:
     image: jwilder/nginx-proxy
     container_name: proxy
     networks:
-      red:
-        ipv4_address: 10.5.0.1
+      - red
     restart: always
     ports:
       - "80:80"
@@ -19,10 +18,11 @@ services:
   # Jira
 
   jira:
+    image: teamatldocker/jira:8.17.0
     container_name: jira
     depends_on:
       - postgresql
-    image: teamatldocker/jira:8.17.0
+    restart: always
     volumes:
       - ./atlassian/jira:/var/atlassian/jira
     environment:
@@ -41,14 +41,14 @@ services:
         max-size: "500k"
         max-file: "50"
     networks:
-      red:
-        ipv4_address: 10.5.0.11
+      - red
 
   postgresql:
+    image: postgres:9.5-alpine
     container_name: postgresql
-    image: postgres:9.5
+    restart: always
     volumes:
-      - ./atlassian/postgresql:/var/lib/postgresql/data
+      - postgresqldata:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${DB_JIRA_USER}
       POSTGRES_PASSWORD: ${DB_JIRA_PASSWORD}
@@ -64,8 +64,7 @@ services:
     ports:
       - 5432:5432
     networks:
-      red:
-        ipv4_address: 10.5.0.10
+      - red
 
   # LDAP
 
@@ -108,8 +107,7 @@ services:
     domainname: "ldap.everis.local"
     hostname: "ldap-server"
     networks:
-      red:
-        ipv4_address: 10.5.0.21
+      - red
 
   phpldapadmin:
     image: osixia/phpldapadmin:stable
@@ -122,12 +120,12 @@ services:
     depends_on:
       - openldap
     networks:
-      red:
-        ipv4_address: 10.5.0.20
+      - red
+
+volumes:
+  postgresqldata:
+    external: false
 
 networks:
   red:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 10.5.0.0/8
