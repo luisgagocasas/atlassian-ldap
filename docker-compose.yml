@@ -1,0 +1,133 @@
+version: '3.7'
+
+services:
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: proxy
+    networks:
+      red:
+        ipv4_address: 10.5.0.1
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./config/nginx.conf:/etc/nginx/conf.d/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+
+  # Jira
+
+  jira:
+    container_name: jira
+    depends_on:
+      - postgresql
+    image: teamatldocker/jira:8.17.0
+    volumes:
+      - ./atlassian/jira:/var/atlassian/jira
+    environment:
+      VIRTUAL_HOST: jira.${DOMAIN}
+      VIRTUAL_PORT: 8080
+      JIRA_DATABASE_URL: postgresql://${DB_JIRA_USER}@postgresql/${DB_JIRA_DB}
+      JIRA_DB_PASSWORD: ${DB_JIRA_PASSWORD}
+      SETENV_JVM_MINIMUM_MEMORY: 2048m
+      SETENV_JVM_MAXIMUM_MEMORY: 4096m
+      JIRA_PROXY_NAME: jira.${DOMAIN}
+      JIRA_PROXY_PORT: 443
+      JIRA_PROXY_SCHEME: "https"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500k"
+        max-file: "50"
+    networks:
+      red:
+        ipv4_address: 10.5.0.11
+
+  postgresql:
+    container_name: postgresql
+    image: postgres:9.5
+    volumes:
+      - ./atlassian/postgresql:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_JIRA_USER}
+      POSTGRES_PASSWORD: ${DB_JIRA_PASSWORD}
+      POSTGRES_DB: ${DB_JIRA_DB}
+      POSTGRES_ENCODING: "UNICODE"
+      POSTGRES_COLLATE: "C"
+      POSTGRES_COLLATE_TYPE: "C"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500k"
+        max-file: "50"
+    ports:
+      - 5432:5432
+    networks:
+      red:
+        ipv4_address: 10.5.0.10
+
+  # LDAP
+
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: openldap
+    environment:
+      LDAP_LOG_LEVEL: "256"
+      LDAP_ORGANISATION: "Everis LDAP"
+      LDAP_DOMAIN: "ldap.everis.local"
+      LDAP_BASE_DN: ""
+      LDAP_ADMIN_PASSWORD: "admin"
+      LDAP_CONFIG_PASSWORD: "config"
+      LDAP_READONLY_USER: "false"
+      #LDAP_READONLY_USER_USERNAME: "readonly"
+      #LDAP_READONLY_USER_PASSWORD: "readonly"
+      LDAP_RFC2307BIS_SCHEMA: "false"
+      LDAP_BACKEND: "mdb"
+      LDAP_TLS: "true"
+      LDAP_TLS_CRT_FILENAME: "ldap.crt"
+      LDAP_TLS_KEY_FILENAME: "ldap.key"
+      LDAP_TLS_DH_PARAM_FILENAME: "dhparam.pem"
+      LDAP_TLS_CA_CRT_FILENAME: "ca.crt"
+      LDAP_TLS_ENFORCE: "false"
+      LDAP_TLS_CIPHER_SUITE: "SECURE256:-VERS-SSL3.0"
+      LDAP_TLS_VERIFY_CLIENT: "demand"
+      LDAP_REPLICATION: "false"
+      KEEP_EXISTING_CONFIG: "false"
+      LDAP_REMOVE_CONFIG_AFTER_SETUP: "true"
+      LDAP_SSL_HELPER_PREFIX: "ldap"
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./ldap/ldap:/var/lib/ldap
+      - ./ldap/slapd:/etc/ldap/slapd.d
+      - ./ldap/certsldap:/container/service/slapd/assets/certs/
+    ports:
+      - "389:389"
+      - "636:636"
+    domainname: "ldap.everis.local"
+    hostname: "ldap-server"
+    networks:
+      red:
+        ipv4_address: 10.5.0.21
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:stable
+    container_name: phpldapadmin
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: "openldap"
+      PHPLDAPADMIN_HTTPS: "false"
+      VIRTUAL_HOST: ldap.${DOMAIN}
+      VIRTUAL_PORT: 80
+    depends_on:
+      - openldap
+    networks:
+      red:
+        ipv4_address: 10.5.0.20
+
+networks:
+  red:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/8

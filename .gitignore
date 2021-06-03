@@ -1,0 +1,7 @@
+.env
+atlassian/*/*
+!atlassian/*/.gitkeep
+certs/*
+!certs/.gitkeep
+ldap/*/*
+!ldap/*/.gitkeep
