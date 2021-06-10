@@ -32,8 +32,8 @@ if [ ! -d "$BEDROCK_FOLDER" ];
     wp dotenv set DB_NAME $DB_NAME_WORDPRESS --allow-root
     wp dotenv set DB_USER root --allow-root
     wp dotenv set DB_PASSWORD $DB_PASSWORD_WORDPRESS --allow-root
-    wp dotenv set DB_HOST diario_mysql --allow-root
-    wp dotenv set WP_HOME $PROTOCOL://$DOMAIN --allow-root
+    wp dotenv set DB_HOST wordpress_mysql --allow-root
+    wp dotenv set WP_HOME $PROTOCOL://wordpress.$DOMAIN --allow-root
     wp dotenv salts generate --allow-root
 
     echo "- INFO: set role to user www-data"
