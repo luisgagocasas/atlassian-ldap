@@ -66,6 +66,56 @@ services:
     networks:
       - red
 
+  # WordPress
+
+  wordpress_web:
+    image: crunchgeek/nginx-pagespeed:1.17.3-r1
+    container_name: wordpress_web
+    hostname: wordpress_web
+    working_dir: /var/www/html
+    restart: always
+    volumes:
+      - ./wordpress/app:/var/www/html:ro
+      - ./wordpress/config:/config
+    depends_on:
+      - wordpress_php
+      - wordpress_mysql
+    environment:
+      VIRTUAL_HOST: wordpress.${DOMAIN}
+    networks:
+      - red
+    env_file: ./wordpress/nginx.env
+
+  wordpress_php:
+    image: crunchgeek/php-fpm:7.3-r7
+    container_name: wordpress_php
+    restart: always
+    working_dir: /var/www/html
+    hostname: wordpress_php
+    networks:
+      - red
+    volumes:
+      - ./wordpress/app:/var/www/html
+      - ./wordpress/config:/config:ro
+      - ./wordpress/boot_scripts:/boot_scripts:ro
+      - ./.env:/config.env:ro
+    env_file: ./wordpress/php-fpm.env
+
+  wordpress_mysql:
+    image: mysql:8.0.20
+    container_name: wordpress_mysql
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: ${DB_NAME_WORDPRESS}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD_WORDPRESS}
+    volumes:
+      - ./wordpress/mysql:/var/lib/mysql
+    networks:
+      - red
+    cap_add:
+      - SYS_NICE
+
   # LDAP
 
   openldap:

@@ -1,0 +1,2 @@
+# * * * * * root echo "test text" > /var/www/html/hola.txt
+* * * * * root /usr/local/bin/php -q /var/www/html/cron.php
