@@ -116,6 +116,21 @@ services:
     cap_add:
       - SYS_NICE
 
+  # PHPMyAdmin
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    networks:
+      - red
+    links:
+      - wordpress_mysql
+    environment:
+      VIRTUAL_HOST: pma.${DOMAIN}
+      PMA_ARBITRARY: 1
+    volumes:
+      - ./config/php.ini:/usr/local/etc/php/php.ini
+
   # LDAP
 
   openldap:
